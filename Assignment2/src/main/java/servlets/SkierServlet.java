@@ -2,15 +2,18 @@ package servlets;
 
 import com.google.gson.Gson;
 
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.servlet.annotation.*;
-
 import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import model.LiftRide;
 import model.Message;
 import model.PostBody;
+import rabbitmqUtils.ChannelFactory;
 import rabbitmqUtils.Sender;
 
 @WebServlet(name = "SkierServlet", value = "/skiers/*")
@@ -43,14 +46,13 @@ public class SkierServlet extends HttpServlet {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     } else {
       PostBody postBody = gson.fromJson(request.getReader(), PostBody.class);
-      Sender sender = new Sender();
       LiftRide liftRide = new LiftRide(Integer.parseInt(urlParts[1]),
               Integer.parseInt(urlParts[3]),
               Integer.parseInt(urlParts[5]),
               Integer.parseInt(urlParts[7]),
               postBody.getTime(), postBody.getLiftID());
       try {
-        sender.send(gson.toJson(liftRide, LiftRide.class));
+        Sender.send(gson.toJson(liftRide, LiftRide.class));
       } catch (Exception e) {
         e.printStackTrace();
       }

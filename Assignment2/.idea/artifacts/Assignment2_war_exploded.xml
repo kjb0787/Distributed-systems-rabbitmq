@@ -13,6 +13,7 @@
           <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:1.7.32" />
           <element id="library" level="project" name="Maven: org.apache.commons:commons-pool2:2.9.0" />
           <element id="library" level="project" name="Maven: org.slf4j:slf4j-simple:1.7.32" />
+          <element id="library" level="project" name="Maven: mysql:mysql-connector-java:8.0.18" />
         </element>
       </element>
     </root>

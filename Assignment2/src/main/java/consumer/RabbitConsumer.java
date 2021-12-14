@@ -11,17 +11,18 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import dal.LiftRideDao;
 import model.LiftRide;
 
 public class RabbitConsumer {
   private final static String QUEUE_NAME = "threadExQ";
-  private final static int NUM_THREADS = 100;
-  private final static ConcurrentHashMap<Integer, List<String>> map = new ConcurrentHashMap<>();
+  private final static int NUM_THREADS = 20;
   private final static Gson gson = new Gson();
+  private static AtomicInteger count = new AtomicInteger(0);
 
   public static void main(String[] argv) throws Exception {
     ConnectionFactory factory = new ConnectionFactory();
@@ -42,10 +43,10 @@ public class RabbitConsumer {
           channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
           // System.out.println( "Callback thread ID = " + Thread.currentThread().getId() + " Received '" + message + "'");
           LiftRide liftRide = gson.fromJson(message, LiftRide.class);
-          map.putIfAbsent(liftRide.getSkierId(), new ArrayList<>());
-          map.get(liftRide.getSkierId()).add(message);
-          if (map.size() % 1000 == 0) {
-            System.out.println("map size now: " + map.size());
+          LiftRideDao.createLiftRide(liftRide);
+
+          if (count.incrementAndGet() % 1000 == 0) {
+            System.out.println("count now: " + count.get());
           }
         };
         // process messages

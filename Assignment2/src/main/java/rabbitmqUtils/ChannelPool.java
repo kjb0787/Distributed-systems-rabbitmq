@@ -11,15 +11,15 @@ public class ChannelPool {
   private static ChannelPool instance = null;
   private final GenericObjectPool<Channel> pool;
 
-  private static int MAX_OBJS = 50;
+  private static int MAX_OBJS = 100;
   private static boolean BLOCKED = true;
-  private static int WAIT_IN_SEC = 10;
+  private static int WAIT_IN_S = 10;
 
-  private ChannelPool() throws IOException, TimeoutException {
+  private ChannelPool() {
     pool = new GenericObjectPool<>(new ChannelFactory());
     pool.setMaxTotal(MAX_OBJS);
     pool.setBlockWhenExhausted(BLOCKED);
-    pool.setMaxTotal(WAIT_IN_SEC * 1000);
+    pool.setMaxTotal(WAIT_IN_S * 1000);
   }
 
   public static ChannelPool getInstance() throws IOException, TimeoutException {
@@ -33,5 +33,9 @@ public class ChannelPool {
 
   public void returnObject(Channel channel) {
     pool.returnObject(channel);
+  }
+
+  public void invalidateObject(Channel channel) throws Exception {
+    pool.invalidateObject(channel);
   }
 }

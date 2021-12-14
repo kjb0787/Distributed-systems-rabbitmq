@@ -3,18 +3,16 @@ package servlets;
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import model.LiftRide;
+import dal.LiftRideDao;
 import model.Message;
-import model.PostBody;
-import rabbitmqUtils.ChannelFactory;
-import rabbitmqUtils.Sender;
+import model.ResortResponse;
 
 @WebServlet(name = "SkierServlet", value = "/skiers/*")
 public class SkierServlet extends HttpServlet {
@@ -26,43 +24,8 @@ public class SkierServlet extends HttpServlet {
   private final String SKIERS_PARAMETER = "skiers";
   private final Gson gson  = new Gson();
 
-  protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    response.setContentType("application/json");
-    response.setCharacterEncoding("UTF-8");
-    String urlPath = request.getPathInfo();
-
-    // check we have a URL!
-    if (urlPath == null || urlPath.isEmpty()) {
-      response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-      response.getWriter().write("missing parameters");
-      return;
-    }
-    String[] urlParts = urlPath.split("/");
-    // and now validate url path and return the response status code
-    // (and maybe also some value if input is valid)
-    if (!isUrlValid(urlParts)) {
-      Message message = new Message("request not valid");
-      response.getWriter().write(gson.toJson(message));
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    } else {
-      PostBody postBody = gson.fromJson(request.getReader(), PostBody.class);
-      LiftRide liftRide = new LiftRide(Integer.parseInt(urlParts[1]),
-              Integer.parseInt(urlParts[3]),
-              Integer.parseInt(urlParts[5]),
-              Integer.parseInt(urlParts[7]),
-              postBody.getTime(), postBody.getLiftID());
-      try {
-        Sender.send(gson.toJson(liftRide, LiftRide.class));
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      // response.getWriter().write(gson.toJson(liftRide));
-      response.setStatus(HttpServletResponse.SC_CREATED);
-    }
-  }
-
-  protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-    res.setContentType("text/plain");
+  protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    res.setContentType("application/json");
     String urlPath = req.getPathInfo();
     // check we have a URL!
     if (urlPath == null || urlPath.isEmpty()) {
@@ -71,18 +34,79 @@ public class SkierServlet extends HttpServlet {
       return;
     }
 
-    String[] urlParts = urlPath.split("/");
-    // and now validate url path and return the response status code
-    // (and maybe also some value if input is valid)
+    String[] urlParts = urlPath.substring(1).split("/");
 
-    if (!isUrlValid(urlParts)) {
-      res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-    } else {
-      res.setStatus(HttpServletResponse.SC_OK);
-      // do any sophisticated processing with urlParts which contains all the url params
-      // TODO: process url params in `urlParts`
-      res.getWriter().write("It works!");
+    switch (urlParts.length) {
+      // routing /{skierID}/vertical
+      case 2: {
+        if (!urlParts[1].equals("vertical")) {
+          badRequest(res, "wrong parameter");
+          return;
+        }
+//        String resortId = req.getParameter("resort");
+//        if (resortId == null) {
+//          badRequest(res, "please provide resort ID");
+//          return;
+//        }
+//        String seasonId = req.getParameter("season");
+//        try {
+//          Integer.parseInt(seasonId);
+//        } catch (Exception e){
+//          badRequest(res, "invalid season ID");
+//          return;
+//        }
+        String skierId = urlParts[0];
+        try {
+          Integer.parseInt(skierId);
+        } catch (Exception e){
+          badRequest(res, "invalid skier ID");
+          return;
+        }
+
+        LiftRideDao liftRideDao = new LiftRideDao();
+        int verticals;
+        try {
+          verticals = liftRideDao.getVerticalsBySkierId(skierId);
+        } catch (SQLException e) {
+          badRequest(res, "no such skier in DB.");
+          e.printStackTrace();
+          return;
+        }
+        res.setStatus(HttpServletResponse.SC_OK);
+        res.getWriter().write(gson.toJson(new ResortResponse("66", verticals)));
+        break;
+      }
+
+      // routing /{resortID}/seasons/{seasonID}/days/{dayID}/skiers/{skierID}
+      case 7: {
+        String resortId = urlParts[0];
+        String seasonId = urlParts[2];
+        String dayId = urlParts[4];
+        String skierId = urlParts[6];
+
+        int verticalsOfDay;
+        LiftRideDao liftRideDao = new LiftRideDao();
+        try {
+          verticalsOfDay = liftRideDao.getVerticalsBySkierIdAndDay(skierId, dayId);
+        } catch (SQLException e) {
+          badRequest(res, "no such skier on such day in DB.");
+          e.printStackTrace();
+          return;
+        }
+        res.setStatus(HttpServletResponse.SC_OK);
+        res.getWriter().write(Integer.toString(verticalsOfDay));
+        break;
+      }
+      default: {
+        badRequest(res, "GET method called wrongly");
+      }
     }
+  }
+
+  protected void badRequest(HttpServletResponse res, String message) throws IOException {
+    res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    Gson gson = new Gson();
+    res.getWriter().write(gson.toJson(new Message(message)));
   }
 
   private boolean isUrlValid(String[] urlPath) {

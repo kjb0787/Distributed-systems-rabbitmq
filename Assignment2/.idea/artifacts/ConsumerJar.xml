@@ -15,6 +15,10 @@
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/apache/commons/commons-pool2/2.9.0/commons-pool2-2.9.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/commons-codec/commons-codec/1.2/commons-codec-1.2.jar" path-in-jar="/" />
+      <element id="library" level="project" name="Maven: mysql:mysql-connector-java:8.0.18" />
+      <element id="library" level="project" name="Maven: org.apache.commons:commons-dbcp2:2.7.0" />
+      <element id="library" level="project" name="Maven: org.apache.commons:commons-pool2:2.9.0" />
+      <element id="library" level="project" name="Maven: commons-codec:commons-codec:1.2" />
     </root>
   </artifact>
 </component>
